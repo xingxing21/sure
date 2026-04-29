@@ -134,6 +134,8 @@ class TransactionsController < ApplicationController
       @entry.transaction.lock_attr!(:tag_ids) if @entry.transaction.tags.any?
       @entry.sync_account_later
 
+      notes_changed = @entry.saved_change_to_notes?
+
       # Reload to ensure fresh state for turbo stream rendering
       @entry.reload
 
@@ -155,7 +157,7 @@ class TransactionsController < ApplicationController
               dom_id(@entry, :notes),
               partial: "transactions/notes",
               locals: { entry: @entry, can_annotate: can_annotate_entry? }
-            ) if params[:entry]&.key?(:notes)),
+            ) if params[:entry]&.key?(:notes) && notes_changed),
             turbo_stream.replace(@entry),
             *flash_notification_stream_items
           ].compact

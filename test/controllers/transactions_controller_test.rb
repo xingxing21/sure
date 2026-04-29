@@ -20,7 +20,7 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
           nature: "inflow",
           entryable_type: @entry.entryable_type,
           entryable_attributes: {
-            tag_ids: [ Tag.first.id, Tag.second.id ],
+            tag_ids: [ tags(:one).id, tags(:two).id ],
             category_id: Category.first.id,
             merchant_id: Merchant.first.id
           }
@@ -49,7 +49,7 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
           excluded: false,
           entryable_attributes: {
             id: @entry.entryable_id,
-            tag_ids: [ Tag.first.id, Tag.second.id ],
+            tag_ids: [ tags(:one).id, tags(:two).id ],
             category_id: Category.first.id,
             merchant_id: Merchant.first.id
           }
@@ -63,7 +63,7 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal Date.current, @entry.date
     assert_equal "USD", @entry.currency
     assert_equal -100, @entry.amount
-    assert_equal [ Tag.first.id, Tag.second.id ], @entry.entryable.tag_ids.sort
+    assert_equal [ tags(:one).id, tags(:two).id ].sort, @entry.entryable.tag_ids.sort
     assert_equal Category.first.id, @entry.entryable.category_id
     assert_equal Merchant.first.id, @entry.entryable.merchant_id
     assert_equal "test notes", @entry.notes
@@ -105,6 +105,7 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
       entry: { notes: "split child note", entryable_attributes: { id: child.entryable_id } }
     }
 
+    assert_response :redirect
     assert_equal "split child note", child.reload.notes
   end
 
@@ -112,12 +113,13 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     parent = create_transaction(account: accounts(:depository), amount: 100)
     parent.split!([ { name: "Part 1", amount: 60, category_id: nil }, { name: "Part 2", amount: 40, category_id: nil } ])
     child = parent.child_entries.first
-    tag = Tag.first
+    tag = tags(:one)
 
     patch transaction_url(child), params: {
       entry: { entryable_attributes: { id: child.entryable_id, tag_ids: [ tag.id ] } }
     }
 
+    assert_response :redirect
     assert_equal [ tag.id ], child.reload.entryable.tag_ids
   end
 
